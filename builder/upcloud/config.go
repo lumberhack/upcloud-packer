@@ -26,8 +26,11 @@ type Config struct {
 	TemplatePrefix string `mapstructure:"template_prefix"`
 
 	// Optional configuration values
-	StorageSize             int    `mapstructure:"storage_size"`
-	RawStateTimeoutDuration string `mapstructure:"state_timeout_duration"`
+	Cpu                     int    `mapstructure:"cpu,omitempty"`
+	Mem                     int    `mapstructure:"mem,omitempty"`
+	Plan                    string `mapstructure:"plan,omitempty"`
+	StorageSize             int    `mapstructure:"storage_size,omitempty"`
+	RawStateTimeoutDuration string `mapstructure:"state_timeout_duration,omitempty"`
 
 	StateTimeoutDuration time.Duration
 	ctx                  interpolate.Context
@@ -55,9 +58,11 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	// Assign default values if possible
 	c.Comm.SSHUsername = "root"
 
-	if c.StorageSize == 0 {
-		c.StorageSize = 30
-	}
+	/*
+		if c.StorageSize == 0 {
+			c.StorageSize = 30
+		}
+	*/
 
 	if c.RawStateTimeoutDuration == "" {
 		c.RawStateTimeoutDuration = "5m"

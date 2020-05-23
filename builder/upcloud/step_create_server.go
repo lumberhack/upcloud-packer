@@ -17,6 +17,8 @@ type StepCreateServer struct {
 
 // Run performs the actual step
 func (s *StepCreateServer) Run(_ context.Context, state multistep.StateBag) multistep.StepAction {
+	const defaultStorageSize = 10
+
 	// Extract state
 	ui := state.Get("ui").(packer.Ui)
 	svc := state.Get("service").(service.Service)
@@ -26,19 +28,30 @@ func (s *StepCreateServer) Run(_ context.Context, state multistep.StateBag) mult
 	title := fmt.Sprintf("packer-builder-upcloud-%d", time.Now().Unix())
 	hostname := title
 
+	plan, err := getPlan(&svc, config)
+	if err != nil {
+		return handleError(fmt.Errorf("Error creating server instance: %s", err), state)
+	}
+
+	storageSize := getDefaultInt(plan.StorageSize, config.StorageSize)
+	if storageSize <= 0 {
+		storageSize = defaultStorageSize
+	}
+
 	createServerRequest := request.CreateServerRequest{
 		Title:            title,
 		Hostname:         hostname,
 		Zone:             config.Zone,
 		PasswordDelivery: request.PasswordDeliveryNone,
-		CoreNumber:       2,
-		MemoryAmount:     2048,
+		CoreNumber:       getDefaultInt(plan.CoreNumber, config.Cpu),
+		MemoryAmount:     getDefaultInt(plan.MemoryAmount, config.Mem),
+		Plan:             plan.Name,
 		StorageDevices: []upcloud.CreateServerStorageDevice{
 			{
 				Action:  upcloud.CreateServerStorageDeviceActionClone,
 				Storage: config.StorageUUID,
 				Title:   fmt.Sprintf("%s-disk1", title),
-				Size:    config.StorageSize,
+				Size:    storageSize,
 				Tier:    upcloud.StorageTierMaxIOPS,
 			},
 		},
@@ -191,4 +204,49 @@ func (s *StepCreateServer) Cleanup(state multistep.StateBag) {
 			ui.Error(fmt.Sprintf("Failed to delete disk \"%s\": %s", storageTitle, err))
 		}
 	}
+}
+
+func getDefaultInt(def, val int) int {
+	if val > 0 {
+		return val
+	}
+
+	return def
+}
+
+func getPlan(svc *service.Service, config Config) (upcloud.Plan, error) {
+	const defaultPlan = "1xCPU-1GB"
+
+	plans, err := svc.GetPlans()
+	if err != nil {
+		return upcloud.Plan{}, err
+	}
+
+	if config.Plan != "" {
+		for _, p := range plans.Plans {
+			if p.Name == config.Plan {
+				return p, nil
+			}
+		}
+
+		return upcloud.Plan{}, fmt.Errorf("Plan '%s' not found.", config.Plan)
+
+		// check if cpu/mem are plan-compatible when plan not defined
+	} else if (config.Plan == "") && (config.Cpu > 0) && (config.Mem > 0) {
+		for _, p := range plans.Plans {
+			if (p.CoreNumber == config.Cpu) && (p.MemoryAmount == config.Mem) {
+				return p, nil
+			}
+		}
+
+		// default to default plan when neither cpu, mem and plan are not defined
+	} else if (config.Plan == "") && (config.Cpu <= 0) && (config.Mem <= 0) {
+		for _, p := range plans.Plans {
+			if p.Name == defaultPlan {
+				return p, nil
+			}
+		}
+	}
+
+	return upcloud.Plan{}, nil
 }

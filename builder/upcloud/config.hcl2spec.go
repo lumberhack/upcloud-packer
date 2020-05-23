@@ -61,8 +61,11 @@ type FlatConfig struct {
 	TemplatePrefix string `mapstructure:"template_prefix" cty:"template_prefix"`
 
 	// Optional configuration values
-	StorageSize             int    `mapstructure:"storage_size" cty:"storage_size"`
-	RawStateTimeoutDuration string `mapstructure:"state_timeout_duration" cty:"state_timeout_duration"`
+	Cpu                     int    `mapstructure:"cpu,omitempty" cty:"cpu"`
+	Mem                     int    `mapstructure:"mem,omitempty" cty:"mem"`
+	Plan                    string `mapstructure:"plan,omitempty" cty:"plan"`
+	StorageSize             int    `mapstructure:"storage_size,omitempty" cty:"storage_size"`
+	RawStateTimeoutDuration string `mapstructure:"state_timeout_duration,omitempty" cty:"state_timeout_duration"`
 }
 
 // FlatMapstructure returns a new FlatConfig.
@@ -129,7 +132,9 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"zone":                         &hcldec.AttrSpec{Name: "zone", Type: cty.String, Required: true},
 		"storage_uuid":                 &hcldec.AttrSpec{Name: "storage_uuid", Type: cty.String, Required: true},
 		"template_prefix":              &hcldec.AttrSpec{Name: "template_prefix", Type: cty.String, Required: false},
+		"cpu":                          &hcldec.AttrSpec{Name: "cpu", Type: cty.Number, Required: false},
+		"mem":                          &hcldec.AttrSpec{Name: "mem", Type: cty.Number, Required: false},
+		"plan":                         &hcldec.AttrSpec{Name: "plan", Type: cty.String, Required: false},
 		"storage_size":                 &hcldec.AttrSpec{Name: "storage_size", Type: cty.Number, Required: false},
-		"state_timeout_duration":       &hcldec.AttrSpec{Name: "state_timeout_duration", Type: cty.String, Required: false},
-	}
+		"state_timeout_duration":       &hcldec.AttrSpec{Name: "state_timeout_duration", Type: cty.String, Required: false}}
 }

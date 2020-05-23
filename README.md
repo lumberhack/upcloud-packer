@@ -118,9 +118,15 @@ This section describes the available configuration options for the builder. Plea
 
 ### Optional values
 
-* `storage_size` (int) The storage size in gigabytes. Defaults to `30`. Changing this value is useful if you aim to build a template for larger server configurations where the preconfigured server disk is larger than 30 GB. The operating system disk can also be later extended if needed.
+* `storage_size` (int) The storage size in gigabytes. Defaults to the selected plan disk size or `10`, if no plan exists. Changing this value is useful if you aim to build a template for larger server configurations where the preconfigured server disk is larger than 30 GB. The operating system disk can also be later extended if needed.
 * `state_timeout_duration` (string) The amount of time to wait for resource state changes. Defaults to `5m`.
 * `template_prefix` (string) The prefix to use for the generated template title. Defaults to an empty string, meaning the prefix will be the storage title. You can use this option to easily differentiate between different templates.
+* `cpu` (int) The number of CPU cores. Defaults to the selected plan CPU cores or `1`.
+* `mem` (int) Size of memory. Defaults to the selected plan memory size or `1024`. [Check for permited values first](https://developers.upcloud.com/1.3/8-servers/#list-server-configurations).
+* `plan` (string) UpCloud plan to use. Defaults to the smallest plan: `1xCPU-1GB`. [Check for permited values first](https://developers.upcloud.com/1.3/7-plans/#list-available-plans).
+
+
+_If `cpu` and `mem`, but no `plan`, are set, the builder will try to infer a suitable plan._
 
 ## License
 
