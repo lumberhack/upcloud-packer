@@ -215,38 +215,48 @@ func getDefaultInt(def, val int) int {
 }
 
 func getPlan(svc *service.Service, config Config) (upcloud.Plan, error) {
-	const defaultPlan = "1xCPU-1GB"
-
 	plans, err := svc.GetPlans()
 	if err != nil {
 		return upcloud.Plan{}, err
 	}
 
 	if config.Plan != "" {
-		for _, p := range plans.Plans {
-			if p.Name == config.Plan {
-				return p, nil
-			}
-		}
-
-		return upcloud.Plan{}, fmt.Errorf("Plan '%s' not found.", config.Plan)
-
-		// check if cpu/mem are plan-compatible when plan not defined
-	} else if (config.Plan == "") && (config.Cpu > 0) && (config.Mem > 0) {
-		for _, p := range plans.Plans {
-			if (p.CoreNumber == config.Cpu) && (p.MemoryAmount == config.Mem) {
-				return p, nil
-			}
-		}
-
-		// default to default plan when neither cpu, mem and plan are not defined
-	} else if (config.Plan == "") && (config.Cpu <= 0) && (config.Mem <= 0) {
-		for _, p := range plans.Plans {
-			if p.Name == defaultPlan {
-				return p, nil
-			}
-		}
+		return getNamedPlan(plans, config)
 	}
 
+	if (config.Cpu > 0) && (config.Mem > 0) {
+		return getExactPlan(plans, config)
+	} else if (config.Plan == "") && (config.Cpu <= 0) && (config.Mem <= 0) {
+		return getDefaultPlan(plans)
+	}
+
+	return upcloud.Plan{}, nil
+}
+
+func getNamedPlan(plans *upcloud.Plans, config Config) (upcloud.Plan, error) {
+	for _, p := range plans.Plans {
+		if p.Name == config.Plan {
+			return p, nil
+		}
+	}
+	return upcloud.Plan{}, fmt.Errorf("Plan '%s' not found.", config.Plan)
+}
+
+func getExactPlan(plans *upcloud.Plans, config Config) (upcloud.Plan, error) {
+	for _, p := range plans.Plans {
+		if (p.CoreNumber == config.Cpu) && (p.MemoryAmount == config.Mem) {
+			return p, nil
+		}
+	}
+	return upcloud.Plan{}, fmt.Errorf("Plan not found for that CPU/Mem values.")
+}
+
+func getDefaultPlan(plans *upcloud.Plans) (upcloud.Plan, error) {
+	const defaultPlan = "1xCPU-1GB"
+	for _, p := range plans.Plans {
+		if p.Name == defaultPlan {
+			return p, nil
+		}
+	}
 	return upcloud.Plan{}, nil
 }
